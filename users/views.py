@@ -1,6 +1,9 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
 from django.utils import timezone
 from .serializers import UserSerializer, LoginSerializer
 from django.contrib.auth import get_user_model
@@ -52,19 +55,34 @@ class LoginView(APIView):
                     {"error": "Please verify your email first"},
                     status=status.HTTP_403_FORBIDDEN
                 )
-            # Handle login success (you might want to return a token here)
-            return Response({"message": "Login successful"})
+            
+            # Generate tokens
+            tokens = RefreshToken.for_user(user)
+            return Response({
+                'user': UserSerializer(user).data
+            })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
 class VerifyEmailView(APIView):
     def get(self, request):
         # Fetch query parameters
         user_id = request.query_params.get('id')
         token = request.query_params.get('token')
 
+        # If query parameters are missing, check the request body
+        if not user_id or not token:
+            try:
+                user_id = request.data.get('id')
+                token = request.data.get('token')
+            except AttributeError:
+                # Handle case where request.data is not available (e.g., GET request without body)
+                pass
+
+        # Check if both 'id' and 'token' are provided
         if not user_id or not token:
             return Response(
-                {"error": "Both 'id' and 'token' query parameters are required"},
+                {"error": "Both 'id' and 'token' are required as query parameters or in the request body"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -93,3 +111,10 @@ class VerifyEmailView(APIView):
                 {"error": "Invalid verification link"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+    @permission_classes([IsAuthenticated])
+    def post(self, request):
+        user = request.user
+        return Response({
+            "is_verified": user.is_email_verified,
+            "email": user.email
+        })
