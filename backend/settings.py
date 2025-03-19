@@ -30,11 +30,11 @@ SECRET_KEY = 'django-insecure-!#yn35n2nzpf51mv_x3nq2q*u3tv6c%c2hdtq+vb9&p)w+(yv8
 DEBUG = True
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS','').split(',')
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOW_ALL_ORIGINS = True
+"""CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-]
+]"""
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -68,6 +68,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
 ]
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 ROOT_URLCONF = 'backend.urls'
 

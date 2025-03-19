@@ -46,7 +46,34 @@ class DaemonWatcherConsumer(AsyncWebsocketConsumer):
         )
         print("Broadcasted message:", data)
 
+        # Forward the message to the frontend client
+        await self.channel_layer.group_send(
+            "frontend_logs",  # This group is used by FrontendLogConsumer
+            {
+                "type": "log_message",  # Must match the handler name in FrontendLogConsumer
+                "message": data,
+            }
+        )
+        print("Broadcasted message to alerts and forwarded to frontend_logs:", data)
+
     async def broadcast_message(self, event):
         message = event["message"]
         # Forward the message to the connected client
+        await self.send(text_data=json.dumps(message))
+
+class FrontendLogConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        # You can capture any query parameters if needed
+        self.group_name = "frontend_logs"
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+        print("Frontend client connected to logs.")
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        print("Frontend client disconnected.")
+
+    async def log_message(self, event):
+        # event["message"] contains the log data from Golang
+        message = event["message"]
         await self.send(text_data=json.dumps(message))
