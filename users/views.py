@@ -33,7 +33,22 @@ class RegisterView(generics.CreateAPIView):
             "sender": {"name": os.getenv('BREVO_EMAIL_NAME'), "email": os.getenv('BREVO_EMAIL_FROM')},
             "to": [{"email": user.email, "name": user.username}],
             "subject": "Verify Your Email",
-            "htmlContent": f"<p>Click <a href='{os.getenv('FRONTEND_URL')}/verify-email/{user.id}/{verification_token}'>here</a> to verify your email.</p>"
+            "htmlContent": f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h1 style="color: #333; text-align: center;">Welcome to Our Platform!</h1>
+                <p style="color: #666;">Dear {user.username},</p>
+                <p style="color: #666;">Thank you for registering with us. To complete your registration, please verify your email address by clicking the button below:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                <a href='{os.getenv('FRONTEND_URL')}/api/verify-email/?id={user.id}&token={verification_token}'
+                   style="background-color: #4CAF50; color: white; padding: 12px 25px; text-decoration: none; border-radius: 4px;">
+                   Verify Email Address
+                </a>
+                </div>
+                <p style="color: #666;">If the button doesn't work, you can copy and paste this link into your browser:</p>
+                <p style="color: #666; word-break: break-all;">{os.getenv('FRONTEND_URL')}/api/verify-email/?id={user.id}&token={verification_token}</p>
+                <p style="color: #999; font-size: 12px;">This link will expire in 24 hours.</p>
+            </div>
+            """
         }
         response = requests.post(
             'https://api.brevo.com/v3/smtp/email',
