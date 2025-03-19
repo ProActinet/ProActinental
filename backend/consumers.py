@@ -1,4 +1,5 @@
 import json
+import asyncio
 from urllib.parse import parse_qs
 from channels.generic.websocket import AsyncWebsocketConsumer
 
@@ -18,7 +19,12 @@ class DaemonWatcherConsumer(AsyncWebsocketConsumer):
         await self.accept()
         print(f"WebSocket connected: {self.username} ({self.email})")
 
+        self.keepalive_task = asyncio.create_task(self.send_keepalive())
+
     async def disconnect(self, close_code):
+        if hasattr(self, 'keepalive_task'):
+            self.keepalive_task.cancel()
+
         # Remove this connection from the group when disconnected
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
         print("WebSocket disconnected.")
@@ -60,6 +66,19 @@ class DaemonWatcherConsumer(AsyncWebsocketConsumer):
         message = event["message"]
         # Forward the message to the connected client
         await self.send(text_data=json.dumps(message))
+
+    async def send_keepalive(self):
+        """Send a simple keepalive message every 30 seconds to keep the connection active."""
+        try:
+            while True:
+                await asyncio.sleep(30)
+                # You can send a custom keepalive message (or even an empty ping).
+                await self.send(text_data=json.dumps({"type": "keepalive"}))
+                # Optionally, log the heartbeat:
+                # print("Sent keepalive message")
+        except asyncio.CancelledError:
+            # Task was cancelled because the connection is closing.
+            pass
 
 class FrontendLogConsumer(AsyncWebsocketConsumer):
     async def connect(self):
