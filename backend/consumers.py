@@ -35,6 +35,10 @@ class DaemonWatcherConsumer(AsyncWebsocketConsumer):
         except json.JSONDecodeError:
             print("Received invalid JSON.")
             return
+        
+        if data.get("type") == "ping":
+            await self.send(text_data=json.dumps({"type": "pong"}))
+            return
 
         # Attach username/email if not provided in the message
         if "username" not in data:
